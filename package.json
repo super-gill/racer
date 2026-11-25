@@ -1,0 +1,17 @@
+{
+  "name": "pod-racer-prototype",
+  "version": "0.1.4",
+  "description": "Top-down twin-engine pod racer prototype (working title). Served by a small Node host for LAN play.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node tests/sim.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "three": "0.160.0"
+  }
+}

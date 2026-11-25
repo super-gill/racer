@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pod Workshop</title>
+<!--
+  Pod Workshop: design how pods look, preview them close up and at race camera distance.
+  Served by the Node host at /workshop.html. See README.md.
+-->
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/css/workshop.css">
+<script type="importmap">
+  { "imports": {
+      "three": "/vendor/three/build/three.module.js",
+      "three/addons/": "/vendor/three/examples/jsm/"
+  } }
+</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="panel">
+  <h1>Pod Workshop</h1>
+  <div class="sub">Prototype</div>
+  <div class="row"><label>Preset</label><select id="preset"></select><span></span></div>
+  <div>
+    <button id="btn-random">Randomise</button>
+    <button id="btn-copy">Copy JSON</button>
+    <button id="btn-paste">Paste JSON</button>
+  </div>
+  <div id="controls"></div>
+</div>
+<div id="viewbar">
+  <button id="btn-turntable" class="on">Close-up</button>
+  <button id="btn-race">Race view</button>
+  <button id="btn-ab">Afterburner</button>
+  <button id="btn-spin" class="on">Auto-rotate</button>
+</div>
+<div id="hint">Drag to orbit, scroll to zoom</div>
+<div id="toast"></div>
+
+
+<script type="module" src="/client/workshop.js"></script>
+</body>
+</html>

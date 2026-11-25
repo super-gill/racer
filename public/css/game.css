@@ -1,0 +1,72 @@
+/* Game HUD and overlays. */
+:root {
+  --hud-fg: #ffcf8a;
+  --hud-dim: #c9a37a;
+  --hud-bg: rgba(24, 16, 10, 0.62);
+  --hud-line: rgba(255, 207, 138, 0.35);
+  --hud-hot: #ff5a36;
+  --hud-ok: #9fdc6a;
+  --mono: "Consolas", "Menlo", "DejaVu Sans Mono", monospace;
+}
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+canvas#view { display: block; }
+.hud { position: fixed; pointer-events: none; font-family: var(--mono); color: var(--hud-fg);
+       text-transform: uppercase; letter-spacing: 0.08em; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+.panel { background: var(--hud-bg); border: 1px solid var(--hud-line); padding: 8px 12px; }
+.label { color: var(--hud-dim); font-size: 11px; }
+.big { font-size: 28px; line-height: 1.1; }
+
+#hud-left  { top: 14px; left: 14px; display: flex; gap: 10px; }
+#hud-right { top: 14px; right: 208px; text-align: right; }
+#minimap   { position: fixed; top: 14px; right: 14px; width: 180px; height: 180px; pointer-events: none;
+             background: var(--hud-bg); border: 1px solid var(--hud-line); }
+#hud-speed { bottom: 18px; left: 50%; transform: translateX(-50%); text-align: center; min-width: 200px; }
+#hud-speed .big { font-size: 40px; }
+#boost-tag { display: inline-block; margin-top: 2px; padding: 0 6px; font-size: 11px; visibility: hidden;
+             background: var(--hud-fg); color: #20140a; }
+#hud-heat  { bottom: 18px; left: 14px; display: flex; gap: 14px; align-items: flex-end; }
+.heat { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.heat-bar { width: 18px; height: 110px; border: 1px solid var(--hud-line); position: relative; background: rgba(0,0,0,0.35); }
+.heat-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: var(--hud-fg); }
+.heat-fill.hot { background: var(--hud-hot); }
+.heat-bar .redline { position: absolute; left: -3px; right: -3px; top: 15%; border-top: 1px dashed var(--hud-hot); }
+#hud-levers { bottom: 18px; left: 150px; display: flex; gap: 14px; align-items: flex-end; }
+.lever-bar .zero { position: absolute; left: -3px; right: -3px; top: 50%; border-top: 1px solid var(--hud-dim); }
+.lever-fill { position: absolute; left: 2px; right: 2px; background: #fff2dc; }
+.lever-fill.reverse { background: #7fb6ff; }
+.lever-bar .output { position: absolute; left: -5px; right: -5px; height: 2px; background: var(--hud-hot); }
+.fuel-bar { margin: 6px auto 2px; width: 170px; height: 6px; border: 1px solid var(--hud-line); background: rgba(0,0,0,0.35); }
+.fuel-fill { height: 100%; width: 100%; background: var(--hud-fg); }
+.fuel-fill.low { background: var(--hud-hot); }
+#hud-modes { bottom: 18px; right: 14px; text-align: right; font-size: 11px; line-height: 1.7; }
+#hud-modes b { color: var(--hud-fg); font-weight: normal; }
+#hud-modes span { color: var(--hud-dim); }
+
+#center-msg { top: 34%; left: 0; right: 0; text-align: center; font-size: 64px; letter-spacing: 0.2em; }
+#warn-msg   { top: 52%; left: 0; right: 0; text-align: center; font-size: 18px; color: var(--hud-hot); }
+#toast      { top: 64%; left: 50%; transform: translateX(-50%); font-size: 13px; opacity: 0; transition: opacity 0.25s; }
+.blink { animation: blink 0.5s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0.25; } }
+
+.overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+           background: rgba(20, 12, 6, 0.55); font-family: var(--mono); color: var(--hud-fg); }
+.overlay.show { display: flex; }
+.card { background: rgba(24, 16, 10, 0.9); border: 1px solid var(--hud-line); padding: 22px 28px; min-width: 420px; max-width: 640px; }
+.card h1 { margin: 0 0 4px; font-size: 30px; letter-spacing: 0.25em; font-weight: normal; }
+.card h2 { margin: 18px 0 6px; font-size: 13px; letter-spacing: 0.15em; color: var(--hud-dim); font-weight: normal; }
+.card table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.card td { padding: 3px 8px 3px 0; vertical-align: top; }
+.card td:first-child { color: #fff2dc; white-space: nowrap; }
+.card .prompt { margin-top: 18px; text-align: center; letter-spacing: 0.2em; }
+.card .sub { color: var(--hud-dim); font-size: 12px; }
+
+#tuning { position: fixed; top: 210px; right: 14px; width: 300px; max-height: calc(100% - 340px); overflow-y: auto;
+          display: none; font-family: var(--mono); font-size: 11px; color: var(--hud-fg); }
+#tuning.show { display: block; }
+#tuning h3 { margin: 10px 0 4px; font-size: 11px; color: var(--hud-dim); font-weight: normal; letter-spacing: 0.15em; text-transform: uppercase; }
+#tuning .row { display: grid; grid-template-columns: 1fr 90px 44px; gap: 6px; align-items: center; margin: 2px 0; }
+#tuning input[type=range] { width: 90px; accent-color: #ffb347; }
+#tuning .val { text-align: right; color: #fff2dc; }
+#tuning button { margin: 10px 6px 2px 0; background: transparent; color: var(--hud-fg); border: 1px solid var(--hud-line);
+                 font-family: var(--mono); font-size: 11px; padding: 4px 8px; cursor: pointer; }
+#tuning button:hover { background: rgba(255, 207, 138, 0.15); }

@@ -1,0 +1,27 @@
+/* Pod Workshop panel. */
+:root {
+  --fg: #ffcf8a; --dim: #c9a37a; --bg: rgba(24, 16, 10, 0.86); --line: rgba(255, 207, 138, 0.3);
+  --mono: "Consolas", "Menlo", "DejaVu Sans Mono", monospace;
+}
+html, body { margin: 0; height: 100%; overflow: hidden; background: #1a120c; font-family: var(--mono); color: var(--fg); }
+#view { position: fixed; inset: 0; display: block; }
+#panel { position: fixed; top: 0; left: 0; bottom: 0; width: 300px; overflow-y: auto; background: var(--bg);
+         border-right: 1px solid var(--line); padding: 12px 14px 20px; box-sizing: border-box; font-size: 11px; }
+#panel h1 { font-size: 15px; letter-spacing: 0.2em; font-weight: normal; margin: 0 0 2px; text-transform: uppercase; }
+#panel .sub { color: var(--dim); margin-bottom: 8px; }
+#panel h3 { margin: 14px 0 4px; font-size: 11px; color: var(--dim); font-weight: normal; letter-spacing: 0.15em;
+            text-transform: uppercase; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+.row { display: grid; grid-template-columns: 1fr 120px 36px; gap: 6px; align-items: center; margin: 3px 0; }
+.row input[type=range] { width: 120px; accent-color: #ffb347; }
+.row select, .row input[type=color], .row input[type=number] { width: 120px; background: #2a1d12; color: var(--fg);
+            border: 1px solid var(--line); font-family: var(--mono); font-size: 11px; }
+.row input[type=color] { height: 20px; padding: 0; }
+.val { text-align: right; color: #fff2dc; }
+button { background: transparent; color: var(--fg); border: 1px solid var(--line); font-family: var(--mono);
+         font-size: 11px; padding: 4px 8px; cursor: pointer; margin: 4px 4px 0 0; }
+button:hover, button.on { background: rgba(255, 207, 138, 0.18); }
+#viewbar { position: fixed; top: 12px; left: 314px; display: flex; gap: 6px; }
+#viewbar button { background: var(--bg); margin: 0; }
+#hint { position: fixed; bottom: 12px; left: 314px; color: var(--dim); font-size: 11px; letter-spacing: 0.05em; }
+#toast { position: fixed; bottom: 12px; right: 14px; font-size: 11px; opacity: 0; transition: opacity 0.3s; background: var(--bg);
+         border: 1px solid var(--line); padding: 6px 10px; }
