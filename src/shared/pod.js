@@ -25,11 +25,12 @@ export function newEngineState() {
 
 export class Pod {
   /**
-   * id: unique number in the race. human: driven by a person's input (otherwise AI).
+   * id: unique number in the race. spec: Pod Workshop spec, how the pod looks (visual only for now).
+   * color: base colour as a number, for the minimap. human: driven by a person's input (otherwise AI).
    * ai: AI driving settings (lane, topSpeed, ...); humans get some too, used after they finish.
    */
-  constructor({ id, name, color, human = false, ai }) {
-    Object.assign(this, { id, name, color, human, ai });
+  constructor({ id, name, spec, color, human = false, ai }) {
+    Object.assign(this, { id, name, spec, color, human, ai });
     this.autodrive = false;          // a human pod driven by the AI (testing, or after finishing)
     this.reset(0, 0);
   }

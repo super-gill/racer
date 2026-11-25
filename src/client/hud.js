@@ -135,11 +135,14 @@ export function updateHud(dt, modes) {
   updateMinimap();
 }
 
+/** Makes text safe to put inside HTML (player names will come from other people over the network). */
+const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
 function renderResults() {
   const rows = standings().map((pod, i) => {
-    const total = pod.finished ? formatTime(pod.finishTime) : pod.dnf ? `Out: ${pod.dnf}` : 'Racing';
+    const total = pod.finished ? formatTime(pod.finishTime) : pod.dnf ? `Out: ${escapeHtml(pod.dnf)}` : 'Racing';
     const style = pod === localPod ? ' style="color:#ffcf8a"' : '';
-    return `<tr${style}><td>${i + 1}. ${pod.name}</td><td>${total}</td><td>Best ${formatTime(pod.bestLap)}</td><td>Wrecks ${pod.crashCount}</td></tr>`;
+    return `<tr${style}><td>${i + 1}. ${escapeHtml(pod.name)}</td><td>${total}</td><td>Best ${formatTime(pod.bestLap)}</td><td>Wrecks ${pod.crashCount}</td></tr>`;
   }).join('');
   const table = $('results-table');
   if (table.dataset.last !== rows) { table.innerHTML = rows; table.dataset.last = rows; }

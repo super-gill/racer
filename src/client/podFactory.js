@@ -1,9 +1,10 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /* ===========================================================================
    2. POD FACTORY
-   buildPod(spec) returns a Three.js group plus handles for animation.
-   Used by the workshop now and by the game from the next version.
+   buildPod(spec, options) returns a Three.js group plus handles for animation.
+   Used by both the Pod Workshop and the game.
    Pod-local space: +X forward, +Z right, +Y up.
    =========================================================================== */
 
@@ -48,8 +49,8 @@ export const PodFactory = (() => {
    * Paints one part. The canvas is the part unrolled: x runs round the circumference, y runs
    * front (top of the canvas) to back. circumference and length (world units) keep markings in proportion.
    */
-  function paintPart(livery, { circumference, length, kind, seed }) {
-    const W = 1024, H = 512;
+  function paintPart(livery, { circumference, length, kind, seed, textureSize = 1024 }) {
+    const W = textureSize, H = textureSize / 2;
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const g = canvas.getContext('2d');
@@ -197,12 +198,11 @@ export const PodFactory = (() => {
     };
   }
 
-  function buildEngine(spec, side, seed) {
+  /** One engine. material: its painted material. side: -1 left, 1 right. */
+  function buildEngine(spec, side, material) {
     const e = spec.engine;
     const group = new THREE.Group();
     const { profile, exit, back, front } = engineProfile(e);
-    const circumference = 2 * Math.PI * e.bodyRadius;
-    const material = paintMaterial(spec.livery, { circumference, length: e.length, kind: 'engine', seed });
     const shell = new THREE.Mesh(latheAlongX(profile, 28), material);
     group.add(shell);
 
@@ -220,18 +220,36 @@ export const PodFactory = (() => {
     throat.position.x = back + 0.12;
     group.add(throat);
     if (e.nozzle === 'afterburner') {
+      // 14 petals round the exit, merged into one mesh so they cost one draw call.
       const petals = 14;
       const petalGeo = new THREE.BoxGeometry(0.5, 0.035, (2 * Math.PI * exit / petals) * 1.08);
+      const pivot = new THREE.Object3D(), petal = new THREE.Object3D();
+      pivot.add(petal);
+      petal.position.set(back - 0.18, exit * 1.02, 0);
+      petal.rotation.z = 0.18;                    // flared slightly open
+      const pieces = [];
       for (let i = 0; i < petals; i++) {
-        const pivot = new THREE.Group();
         pivot.rotation.x = (i / petals) * Math.PI * 2;
-        const petal = new THREE.Mesh(petalGeo, darkMetal);
-        petal.position.set(back - 0.18, exit * 1.02, 0);
-        petal.rotation.z = 0.18;                  // flared slightly open
-        pivot.add(petal);
-        group.add(pivot);
+        pivot.updateMatrixWorld(true);
+        pieces.push(petalGeo.clone().applyMatrix4(petal.matrixWorld));
       }
+      group.add(new THREE.Mesh(mergeGeometries(pieces), darkMetal));
+      petalGeo.dispose();
+      pieces.forEach((g) => g.dispose());
     }
+
+    // Thrust reverser buckets: lie along the nozzle when stowed, swing in behind it when deployed.
+    // The caller sets each pivot's rotation.y = userData.side * deployed (0 to 1) * 2.2.
+    const reverserPivots = [-1, 1].map((plateSide) => {
+      const pivot = new THREE.Group();
+      pivot.position.set(back + e.nozzleLength * 0.35, 0, plateSide * e.bodyRadius * 0.92);
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(0.9, exit * 1.2, 0.07), darkMetal);
+      plate.position.x = 0.45;
+      pivot.add(plate);
+      pivot.userData.side = plateSide;
+      group.add(pivot);
+      return pivot;
+    });
 
     // Exhaust glow and afterburner plume (both animated by the caller).
     const exhaustMaterial = additive(0xff9a3c, 0.9);
@@ -270,7 +288,7 @@ export const PodFactory = (() => {
         group.add(fin);
       }
     }
-    return { group, exhaust, exhaustMaterial, flame, material };
+    return { group, exhaust, exhaustMaterial, flame, material, reverserPivots };
   }
 
   function finGeometry(shape, size) {
@@ -298,10 +316,10 @@ export const PodFactory = (() => {
     return shapes[c.shape];
   }
 
-  function buildCockpit(spec, seed) {
+  function buildCockpit(spec, seed, textureSize) {
     const c = spec.cockpit;
     const group = new THREE.Group();
-    const material = paintMaterial(spec.livery, { circumference: 2 * Math.PI * c.width, length: c.length, kind: 'cockpit', seed });
+    const material = paintMaterial(spec.livery, { circumference: 2 * Math.PI * c.width, length: c.length, kind: 'cockpit', seed, textureSize });
     const hull = new THREE.Mesh(latheAlongX(cockpitProfile(c), 24), material);
     hull.scale.y = 0.62;
     const canopy = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), glass);
@@ -376,8 +394,19 @@ export const PodFactory = (() => {
 
   /* ---------- Whole pod ---------- */
 
-  /** Builds a pod from a spec. Engines sit ahead of the centre, cockpit behind, as in the game. */
-  function buildPod(spec) {
+  /**
+   * Builds a pod from a spec. Engines sit ahead of the centre, cockpit behind, as in the game.
+   * options.textureSize: livery canvas width in pixels (1024 for close-ups, 512 is plenty in a race).
+   *
+   * Returns handles for animating it:
+   *   root, body            position/heading group, and the bank/pitch group inside it
+   *   engines[i]            { group, base, exhaust, exhaustMaterial, flame, material, reverserPivots }, left then right
+   *   cockpit, cockpitBase  cockpit group and its rest position
+   *   links                 group holding the cables or struts (hide it when the pod breaks up)
+   *   updateLinks()         call after moving engines or cockpit so links stay attached
+   *   dispose()             frees GPU memory
+   */
+  function buildPod(spec, { textureSize = 1024 } = {}) {
     const root = new THREE.Group();          // position and heading
     const body = new THREE.Group();          // bank and pitch
     root.add(body);
@@ -385,14 +414,20 @@ export const PodFactory = (() => {
     const engineX = spec.cockpit.distance * 0.4;
     const cockpitX = -spec.cockpit.distance * 0.6;
 
+    // Both engines use the same painted texture (half the texture memory), but each has its own
+    // material so it can glow with its own heat.
+    const engineMaterial = paintMaterial(spec.livery, {
+      circumference: 2 * Math.PI * spec.engine.bodyRadius, length: spec.engine.length, kind: 'engine', seed, textureSize });
     const engines = [-1, 1].map((side) => {
-      const engine = buildEngine(spec, side, seed);
-      engine.group.position.set(engineX, 0, side * spec.engine.spacing);
+      const engine = buildEngine(spec, side, side < 0 ? engineMaterial : engineMaterial.clone());
+      engine.base = new THREE.Vector3(engineX, 0, side * spec.engine.spacing);
+      engine.group.position.copy(engine.base);
       body.add(engine.group);
       return engine;
     });
-    const cockpit = buildCockpit(spec, seed + 1);
-    cockpit.group.position.x = cockpitX;
+    const cockpit = buildCockpit(spec, seed + 1, textureSize);
+    const cockpitBase = new THREE.Vector3(cockpitX, 0, 0);
+    cockpit.group.position.copy(cockpitBase);
     body.add(cockpit.group);
     const links = buildLinks(spec, engines, cockpit.group);
     body.add(links.group);
@@ -402,16 +437,16 @@ export const PodFactory = (() => {
     });
 
     return {
-      root, body, engines, cockpit: cockpit.group,
-      /** Call after moving the engines or cockpit so cables and struts stay attached. */
+      root, body, engines, cockpit: cockpit.group, cockpitBase, links: links.group,
       updateLinks: links.update,
-      /** Frees GPU memory when the pod is rebuilt or removed. */
       dispose() {
+        const shared = [chrome, darkMetal, intakeDark, glass, cable];
         root.traverse((o) => {
           if (!o.isMesh) return;
           o.geometry.dispose();
+          if (shared.includes(o.material)) return;
           if (o.material.map) o.material.map.dispose();
-          if (![chrome, darkMetal, intakeDark, glass, cable].includes(o.material)) o.material.dispose();
+          o.material.dispose();
         });
       },
     };

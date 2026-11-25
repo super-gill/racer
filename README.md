@@ -1,6 +1,6 @@
 # Working Title: Pod Racer Prototype
 
-**Version:** 0.1.4 (prototype)
+**Version:** 0.1.5 (prototype)
 **Status:** Driving feel test. Not feature complete.
 **Name:** "Working Title" is a placeholder. Change `GAME_TITLE` in `src/shared/config.js` once a name is chosen.
 
@@ -10,7 +10,7 @@
 
 v0.1.x answers one question: **is driving a twin-engine pod fun on a keyboard?**
 
-Everything else on the roadmap (parts, hulls, race types, tournaments, sponsors, career) depends on the answer. This build has only what's needed to judge the handling: one track, three AI opponents, two lever-based control schemes, afterburning jet engines with heat and fuel, two cameras, crashes and a live tuning panel.
+Everything else on the roadmap (parts, hulls, race types, tournaments, sponsors, career) depends on the answer. This build has only what's needed to judge the handling: one track, five AI opponents, two lever-based control schemes, afterburning jet engines with heat and fuel, two cameras, crashes and a live tuning panel.
 
 ## 2. Requirements
 
@@ -115,7 +115,10 @@ Full control of each engine. Set a cruising thrust, then nudge one lever down to
 ## 5. Gameplay rules in this build
 
 ### 5.1 Race
-- 3 laps against 3 AI pods. You start at the back of a two-by-two grid.
+- 3 laps on a grid of 6: you plus 5 AI pods. You start at the back of three rows of two.
+- The grid size is set for LAN play later: 2 to 4 human players, with AI filling the remaining places.
+- **Your pod:** you race the pod you saved in the Pod Workshop with "Race this pod" (see section 10.3), or Redline Special if you haven't saved one. The title screen shows which pod you have. Each AI driver races one of the other presets.
+- A pod's design is **visual only** for now. Every pod handles the same and has the same collision shape, whatever its parts.
 - **Laps** count when you cross the chequered line under the gantry going forwards. Driving backwards over the line doesn't count.
 
 ### 5.2 Engines: afterburning low-bypass jets
@@ -244,18 +247,18 @@ pod-racer/
     ai.js                 AI drivers
     race.js               field setup, countdown, fixed sim step, laps, standings
     events.js             what happened this step, for the client to react to
-    podPresets.js         Pod Workshop preset specs (data only)
+    podPresets.js         pod presets, the pod spec schema, and checking specs are valid
   src/client/             browser only
     main.js               entry point: loop, keys, events to effects and messages
     scene.js              renderer, lights, world (ground, track, walls, mesas, gantry)
     effects.js            particles and scorch marks
-    podView.js            draws a pod from its state, including wreck debris
+    podView.js            animates a Pod Factory model from a pod's state, including wreck debris
     camera.js             north-up and chase cameras
     hud.js                HUD, warnings, minimap, results
     tuningPanel.js        tuning panel (T), saved in the browser
     audio.js              synthesised engine, whine, afterburner, impacts
     input.js              keyboard to raw input
-    podFactory.js         builds workshop pods from a spec
+    podFactory.js         builds pod models from a spec (game and workshop)
     workshop.js           the Pod Workshop page
   tests/sim.test.js       headless race test
 ```
@@ -285,7 +288,7 @@ The browser console has `__dev`:
 - One track, no menus, no saving except tuning.
 - Damage is not modelled: wrecks are all-or-nothing, and pod contact never wrecks.
 - The AI is basic. It follows lanes off the centreline instead of a true racing line, and it doesn't fight for position.
-- Collision shapes are two circles per pod, so very glancing contacts can look slightly off.
+- Collision shapes are two circles per pod, the same for every design, so very glancing contacts can look slightly off. Wide or long designs may overlap a little before contact registers.
 - Tight corners may show small overlaps in the canyon rim mesh.
 - The audio is a placeholder.
 - The current track is twisty, so there are few places long enough to make full use of the afterburner.
@@ -299,7 +302,7 @@ The browser console has `__dev`:
 | 0.2 | LAN races: the race runs on the host, players join from their browsers over WebSockets, a lobby to pick pods and ready up, empty slots filled with AI |
 | 0.3 | Damage model (component integrity, damage from walls, pods, rocks and overstress), fuel balancing, engine shutdown and restart, more ground marks |
 | 0.1.4 | Project split into shared simulation and browser client, served by a Node host. Done |
-| 0.1.5 | Move the Pod Factory into the game. AI pods use the presets, the player uses a workshop design |
+| 0.1.5 | Pod Factory models in the game. AI pods race the presets, the player races a saved workshop design, grid of 6. Done |
 | 0.4 | Parts and hulls changing stats, including a stabiliser part that sets how forgiving the pod is |
 | 0.5 | Race types and results flow |
 | 0.6 | Tournaments, special events, saving |
@@ -309,7 +312,7 @@ The browser console has `__dev`:
 ## 10. Pod Workshop (`/workshop.html`)
 
 ### 10.1 Purpose
-A standalone page for designing how pods look before the new models go into the game. It tests the art direction and the parts system. The game itself still uses the v0.1 placeholder pods.
+Designs how pods look. The game builds every pod with the same Pod Factory, so a design you save here is the pod you race.
 
 ### 10.2 Art direction
 **Salvaged military jet engines, hot-rodded by their crews.** This explains why the pods run low-bypass afterburning jets: surplus fighter engines. It also brings hot-rod culture into the look: flame paint, racing numbers, chrome intakes, exposed afterburner nozzles, riveted panels and wear. It's a deliberate move away from the sleek alien pods of the films.
@@ -319,16 +322,18 @@ Start the host (`npm start`) and open `/workshop.html` on its address, for examp
 
 | Control | Action |
 |---|---|
-| Preset | Load one of the four example pods |
+| Preset | Load one of the six presets: Redline Special, Desert Surplus, Bluebird, Night Shift, Rustbucket, Copperhead. Each AI driver races one of them |
 | Randomise | Random parts and paint |
-| Copy JSON / Paste JSON | Export or import a pod spec through the clipboard |
+| Copy JSON / Paste JSON | Export or import a pod spec through the clipboard. Pasted specs are checked, and missing or out-of-range values are replaced with safe ones |
+| Race this pod | Saves the current design as your pod for the game, then reload the game. Saved in this browser, per host address |
+| Load my pod | Brings your saved pod back into the workshop to edit |
 | Close-up | Turntable view. Drag to orbit, scroll to zoom |
 | Race view | The game's camera height (70 units), with the other presets in formation, to judge readability at race distance |
 | Afterburner | Toggle afterburner plumes |
 | Auto-rotate | Toggle the turntable spin |
 
 ### 10.4 Pod spec
-A pod is described entirely by a spec object. Every visual difference comes from these values, so the same spec can carry gameplay stats later.
+A pod is described entirely by a spec object. Every visual difference comes from these values, so the same spec can carry gameplay stats later. The fields, their ranges and the workshop labels are defined once in `SPEC_SCHEMA` (`src/shared/podPresets.js`). `sanitizeSpec()` uses the same schema to clean any spec from storage or, later, the network.
 
 | Group | Field | Range / options | Meaning |
 |---|---|---|---|
@@ -360,13 +365,13 @@ A pod is described entirely by a spec object. Every visual difference comes from
 - **Paint** is drawn on a canvas per part, as if the part were unrolled. The canvas width runs around the part (the top of the part is at 75% across) and the height runs front (top) to back. Markings are scaled by the part's real circumference and length so numbers and roundels stay in proportion.
 - **Links** are anchored to points on each part. `updateLinks()` keeps them attached while the parts bob independently.
 - **Reflections** come from a generated room environment map, which makes chrome and metal read properly.
-- `PodFactory` (`src/client/podFactory.js`) is ready for the game to use. `buildPod(spec)` returns the pod group plus handles for engines, flames, the cockpit, `updateLinks()` and `dispose()`.
+- `PodFactory` (`src/client/podFactory.js`) is used by both the game and the workshop. `buildPod(spec, { textureSize })` returns the pod group plus handles for engines (exhaust, flame, reverser buckets, material), the cockpit, rest positions, the links group, `updateLinks()` and `dispose()`.
+- **Performance:** the game builds liveries at 512 pixels wide, against 1024 in the workshop close-up. Both engines share one painted texture, and nozzle petals are merged into one mesh. With all six pods on screen, a frame is about 115 draw calls and 29,000 triangles.
 
 ### 10.6 Known limitations
 - Nozzle type and every other part are visual only. No gameplay stats are attached yet.
 - At race distance, numbers and fine markings can't be read. Outline, colour, fins and flames carry the identity.
 - Fins are placed by formula, so extreme slider combinations can look odd.
-- The game doesn't use the Pod Factory yet. That's v0.1.5.
 
 ## 11. Version history
 

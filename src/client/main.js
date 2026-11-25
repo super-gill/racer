@@ -18,6 +18,7 @@ import { PodView } from './podView.js';
 import { view, followPod, snapCamera, updateCamera } from './camera.js';
 import { hudFollow, updateHud, showCentre, showWarning, toast } from './hud.js';
 import { buildTuningPanel, loadSavedTuning } from './tuningPanel.js';
+import { MY_POD_STORAGE_KEY, sanitizeSavedPod } from '../shared/podPresets.js';
 import { audio } from './audio.js';
 import { onKeyPress, takePressed, readLocalInput } from './input.js';
 
@@ -37,7 +38,13 @@ loadSavedTuning();
 buildTuningPanel();
 onKeyPress(() => audio.unlock());
 
-const [localPod] = setupRace();
+/** The pod saved from the Pod Workshop ("Race this pod"), or the default pod. */
+function loadMyPod() {
+  try { return sanitizeSavedPod(JSON.parse(localStorage.getItem(MY_POD_STORAGE_KEY) || 'null')); }
+  catch { return sanitizeSavedPod(null); }
+}
+const myPod = loadMyPod();
+const [localPod] = setupRace([{ name: 'You', spec: myPod.spec }]);
 localPod.autodrive = new URLSearchParams(location.search).has('autodrive');
 const views = new Map(pods.map((pod) => [pod.id, new PodView(pod)]));
 followPod(localPod);
@@ -136,6 +143,7 @@ onResize();
 
 $('title-name').textContent = GAME_TITLE;
 $('title-version').textContent = `Prototype v${VERSION}, driving feel test`;
+$('title-pod').textContent = myPod.name;
 document.title = `${GAME_TITLE} - prototype v${VERSION}`;
 
 let lastTime = performance.now();
@@ -190,4 +198,7 @@ window.__dev = {
     handleEvents();
   },
   start: startRace,
+  /** Drawing cost of the last frame: draw calls, triangles, textures and geometries in memory. */
+  renderInfo: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
+    textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries }),
 };
