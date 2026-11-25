@@ -2,6 +2,7 @@
   "name": "pod-racer-prototype",
   "version": "0.1.4",
   "description": "Top-down twin-engine pod racer prototype (working title). Served by a small Node host for LAN play.",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {

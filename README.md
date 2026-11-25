@@ -371,3 +371,7 @@ A pod is described entirely by a spec object. Every visual difference comes from
 ## 11. Version history
 
 See `CHANGELOG.md`.
+
+## 12. Licence
+
+MIT. See `LICENSE`. Anyone may use, copy, modify and share the code, provided the copyright and licence notice are kept.
