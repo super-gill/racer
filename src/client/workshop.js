@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { PRESETS, clone } from '../shared/podPresets.js';
+import { PRESETS, clone, SPEC_SCHEMA, sanitizeSpec, sanitizeSavedPod, MY_POD_STORAGE_KEY } from '../shared/podPresets.js';
 import { PodFactory } from './podFactory.js';
 import { VERSION } from '../shared/config.js';
 
@@ -174,33 +174,7 @@ addEventListener('resize', onResize);
    Built from a list, like the game's tuning panel.
    =========================================================================== */
 
-const CONTROLS = [
-  // [group, path, label, type, options]
-  ['Engines', 'engine.length', 'Length', 'range', [3.5, 7, 0.1]],
-  ['Engines', 'engine.bodyRadius', 'Body radius', 'range', [0.4, 0.9, 0.01]],
-  ['Engines', 'engine.intakeRadius', 'Intake radius', 'range', [0.4, 1.1, 0.01]],
-  ['Engines', 'engine.bulge', 'Compressor bulge', 'range', [0, 0.35, 0.01]],
-  ['Engines', 'engine.nozzle', 'Nozzle', 'select', ['afterburner', 'plain']],
-  ['Engines', 'engine.nozzleLength', 'Nozzle length', 'range', [0.5, 1.6, 0.05]],
-  ['Engines', 'engine.spacing', 'Spacing', 'range', [1.4, 2.8, 0.05]],
-  ['Fins', 'fins.layout', 'Layout', 'select', ['none', 'vertical', 'outboard', 'both']],
-  ['Fins', 'fins.shape', 'Shape', 'select', ['swept', 'delta', 'square']],
-  ['Fins', 'fins.size', 'Size', 'range', [0.5, 1.6, 0.05]],
-  ['Cockpit', 'cockpit.shape', 'Shape', 'select', ['teardrop', 'needle', 'tub']],
-  ['Cockpit', 'cockpit.length', 'Length', 'range', [2.4, 4.6, 0.1]],
-  ['Cockpit', 'cockpit.width', 'Width', 'range', [0.7, 1.4, 0.05]],
-  ['Cockpit', 'cockpit.distance', 'Distance behind engines', 'range', [5.5, 9, 0.1]],
-  ['Links', 'links.tether', 'Tethers', 'select', ['cables', 'struts']],
-  ['Links', 'links.coupling', 'Engine coupling', 'select', ['cable', 'bar', 'none']],
-  ['Livery', 'livery.base', 'Base colour', 'color'],
-  ['Livery', 'livery.accent', 'Accent colour', 'color'],
-  ['Livery', 'livery.trim', 'Trim colour', 'color'],
-  ['Livery', 'livery.pattern', 'Pattern', 'select', ['plain', 'flames', 'stripes', 'checker', 'split']],
-  ['Livery', 'livery.number', 'Racing number', 'number', [0, 99]],
-  ['Livery', 'livery.font', 'Number style', 'select', ['race', 'stencil']],
-  ['Livery', 'livery.metal', 'Metal finish', 'range', [0, 1, 0.05]],
-  ['Livery', 'livery.wear', 'Wear and grime', 'range', [0, 1, 0.05]],
-];
+const CONTROLS = SPEC_SCHEMA;   // shared with the game, see shared/podPresets.js
 
 const getPath = (obj, path) => path.split('.').reduce((o, k) => o[k], obj);
 function setPath(obj, path, value) {
@@ -285,12 +259,6 @@ function randomSpec() {
   };
 }
 
-/** Accepts a pasted spec only if it has every field a preset has. */
-function validSpec(s) {
-  const ref = PRESETS['Redline Special'];
-  return s && Object.keys(ref).every((k) => s[k] && Object.keys(ref[k]).every((f) => f in s[k]));
-}
-
 function loadSpec(next) {
   spec = clone(next);
   buildControls();
@@ -312,11 +280,33 @@ document.getElementById('btn-copy').onclick = async () => {
 document.getElementById('btn-paste').onclick = async () => {
   try {
     const parsed = JSON.parse(await navigator.clipboard.readText());
-    if (!validSpec(parsed)) throw new Error('missing fields');
+    if (!parsed?.engine || !parsed?.livery) throw new Error('not a pod spec');
     presetSelect.value = '';
-    loadSpec(parsed);
+    loadSpec(sanitizeSpec(parsed));             // missing or out-of-range fields fall back to safe values
     toast('Pod spec loaded');
   } catch { toast('Clipboard does not hold a valid pod spec'); }
+};
+/** The pod currently saved for the game, or the default. */
+function readMyPod() {
+  try { return sanitizeSavedPod(JSON.parse(localStorage.getItem(MY_POD_STORAGE_KEY) || 'null')); }
+  catch { return sanitizeSavedPod(null); }
+}
+const showMyPod = () => { document.getElementById('my-pod').textContent = readMyPod().name; };
+showMyPod();
+
+document.getElementById('btn-mine').onclick = () => {
+  const name = presetSelect.value || 'Custom';
+  try {
+    localStorage.setItem(MY_POD_STORAGE_KEY, JSON.stringify({ name, spec: sanitizeSpec(spec) }));
+    showMyPod();
+    toast('Saved. Reload the game to race this pod');
+  } catch { toast('Could not save: browser storage is blocked'); }
+};
+document.getElementById('btn-load-mine').onclick = () => {
+  const mine = readMyPod();
+  presetSelect.value = PRESETS[mine.name] ? mine.name : '';
+  loadSpec(mine.spec);
+  toast(`Loaded ${mine.name}`);
 };
 document.getElementById('btn-turntable').onclick = () => setView('turntable');
 document.getElementById('btn-race').onclick = () => setView('race');

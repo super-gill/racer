@@ -11,7 +11,10 @@
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/css/game.css">
 <script type="importmap">
-  { "imports": { "three": "/vendor/three/build/three.module.js" } }
+  { "imports": {
+      "three": "/vendor/three/build/three.module.js",
+      "three/addons/": "/vendor/three/examples/jsm/"
+  } }
 </script>
 </head>
 <body>
@@ -59,6 +62,8 @@
   <div class="card">
     <h1 id="title-name">WORKING TITLE</h1>
     <div class="sub" id="title-version">Prototype v0.1.2, driving feel test</div>
+    <h2>Your pod</h2>
+    <div class="sub"><span id="title-pod" style="color:#fff2dc">Redline Special</span>. Design your own in the <a href="/workshop.html" style="color:#ffcf8a">Pod Workshop</a>, press "Race this pod", then reload this page.</div>
     <h2>How it works</h2>
     <div class="sub">Your pod has two afterburning jet engines, one lever each. Keys move the levers and they stay where you leave them. The engines take a moment to spool up to what the levers ask for. You turn by running one engine harder than the other, so turning always costs speed. Below idle a lever deploys that engine's thrust reverser: that is your brake. A running jet always pushes a little, so you never fully stop.</div>
     <h2>Linked levers (default)</h2>

@@ -5,7 +5,8 @@
  * Human pods are driven by raw input passed to simStep (see applyHumanInput in levers.js);
  * everything else is driven by the AI.
  */
-import { AI_DRIVERS, GRID, HUMAN_AI, LAPS, PLAYER_COLOR } from './config.js';
+import { AI_DRIVERS, GRID, HUMAN_AI, LAPS } from './config.js';
+import { PRESETS, DEFAULT_PLAYER_POD, sanitizeSpec, specColor, clone } from './podPresets.js';
 import { N, wrapIndex, indexDelta } from './track.js';
 import { Pod } from './pod.js';
 import { applyHumanInput } from './levers.js';
@@ -25,16 +26,19 @@ export const pods = [];
 
 /**
  * Creates the field: AI drivers first, then the humans at the back of the grid.
- * humans: [{ name, color }]. Returns the human pods in the same order.
+ * humans: [{ name, spec }] where spec is a Pod Workshop spec (sanitised here).
+ * Returns the human pods in the same order.
  */
-export function setupRace(humans = [{ name: 'You', color: PLAYER_COLOR }]) {
+export function setupRace(humans = [{ name: 'You', spec: PRESETS[DEFAULT_PLAYER_POD] }]) {
   pods.length = 0;
   const aiCount = Math.max(0, GRID.length - humans.length);
   AI_DRIVERS.slice(0, aiCount).forEach((d, i) => {
-    pods.push(new Pod({ id: pods.length, name: d.name, color: d.color, ai: { ...d, phase: i * 2.1 } }));
+    const spec = clone(PRESETS[d.pod]);
+    pods.push(new Pod({ id: pods.length, name: d.name, spec, color: specColor(spec), ai: { ...d, phase: i * 2.1 } }));
   });
   const humanPods = humans.map((h) => {
-    const pod = new Pod({ id: pods.length, name: h.name, color: h.color, human: true, ai: { ...HUMAN_AI } });
+    const spec = sanitizeSpec(h.spec);
+    const pod = new Pod({ id: pods.length, name: h.name, spec, color: specColor(spec), human: true, ai: { ...HUMAN_AI } });
     pods.push(pod);
     return pod;
   });

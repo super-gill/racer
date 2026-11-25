@@ -5,7 +5,7 @@
  */
 
 export const GAME_TITLE = 'WORKING TITLE';     // placeholder name, change in one place
-export const VERSION = '0.1.4';
+export const VERSION = '0.1.5';
 export const LAPS = 3;
 export const FIXED_DT = 1 / 120;               // physics runs at a fixed 120 steps per second
 export const SPEED_DISPLAY = 7;                // sim units per second to km/h shown on the HUD
@@ -30,19 +30,22 @@ export const OBSTACLE_LAYOUT = [
   [0.52, 6, 3.5], [0.63, -4, 3.0], [0.75, 9, 4.0], [0.86, -8, 3.2],
 ];
 
-// AI opponents. lane: preferred lateral offset. topSpeed: in sim units per second.
+// AI opponents. pod: which Pod Workshop preset they race. lane: preferred lateral offset.
+// topSpeed: in sim units per second. The field is filled from the top of this list.
 export const AI_DRIVERS = [
-  { name: 'Varrick Sol', color: 0x3f7fd6, lane: -5, topSpeed: 93, steerGain: 2.4, boostHeatLimit: 0.55 },
-  { name: 'Mira Kade',   color: 0x4fb06a, lane:  4, topSpeed: 97, steerGain: 2.2, boostHeatLimit: 0.70 },
-  { name: 'Dusk Oro',    color: 0x9a5ad0, lane:  0, topSpeed: 90, steerGain: 2.6, boostHeatLimit: 0.45 },
+  { name: 'Varrick Sol',   pod: 'Bluebird',       lane: -5, topSpeed: 93, steerGain: 2.4, boostHeatLimit: 0.55 },
+  { name: 'Mira Kade',     pod: 'Copperhead',     lane:  4, topSpeed: 97, steerGain: 2.2, boostHeatLimit: 0.70 },
+  { name: 'Dusk Oro',      pod: 'Night Shift',    lane:  0, topSpeed: 90, steerGain: 2.6, boostHeatLimit: 0.45 },
+  { name: 'Hale Brannock', pod: 'Desert Surplus', lane: -8, topSpeed: 91, steerGain: 2.5, boostHeatLimit: 0.60 },
+  { name: 'Juno Vex',      pod: 'Rustbucket',     lane:  7, topSpeed: 95, steerGain: 2.3, boostHeatLimit: 0.50 },
 ];
 
 // AI settings used to drive a human's pod after they finish, or in autodrive.
 export const HUMAN_AI = { lane: 0, topSpeed: 90, steerGain: 2.4, boostHeatLimit: 0.5, phase: 0 };
-export const PLAYER_COLOR = 0xe8742a;
 
-// Starting grid behind the line: [samples behind the line, lateral offset]. Two by two.
-export const GRID = [[-10, -7], [-10, 7], [-22, -7], [-22, 7]];
+// Starting grid behind the line: [samples behind the line, lateral offset]. Three rows of two.
+// Its length is the field size: 2 to 4 humans plus AI to fill.
+export const GRID = [[-10, -7], [-10, 7], [-22, -7], [-22, 7], [-34, -7], [-34, 7]];
 
 // Collision circles in pod-local space [forward offset, radius]: engine pair and cockpit.
 export const COLLISION_CIRCLES = [[2.6, 2.6], [-4.4, 1.5]];

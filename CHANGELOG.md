@@ -3,6 +3,30 @@
 All notable changes to this project are recorded here.
 Versions stay below 1.0 until the first full release.
 
+## [0.1.5] - 2026-11-25
+
+Puts the Pod Workshop models in the game. Every pod is now built from a workshop spec, and you race your own design.
+
+### Added
+- Game pods built by the Pod Factory from each pod's spec
+- "Race this pod" and "Load my pod" in the workshop, with your saved pod shown on the game's title screen
+- Two presets: Night Shift and Rustbucket
+- Two AI drivers, Hale Brannock and Juno Vex, and a preset for every AI driver
+- Thrust reverser buckets on Pod Factory engines
+- Shared pod spec schema and `sanitizeSpec()`, which cleans saved and pasted specs
+- Second headless test scenario: 4 humans and 2 AI
+- `__dev.renderInfo()` for draw calls, triangles and memory
+
+### Changed
+- Grid raised from 4 to 6 pods (three rows of two)
+- Workshop controls come from the shared spec schema
+- Nozzle petals merged into one mesh, and both engines share one livery texture
+- Race liveries drawn at 512 px wide (1024 in the workshop)
+- Results table escapes pod names, ready for player-entered names over the LAN
+
+### Removed
+- The old primitive pod model
+
 ## [0.1.4] - 2026-11-24
 
 Restructures the project as the groundwork for LAN play. The game plays the same, but now runs from a small Node host, with the race simulation separated so it can later run on that host.
